@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import QuizScore from "./QuizScore";
+import Question from "./Question";
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
@@ -12,12 +13,12 @@ function QuizApi() {
   const [clickedOption, setClickedOption] = useState(0);
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const [options, setOptions] = useState([]);
 
   const QuizData = async (retryCount = 0) => {
     try {
       const response = await axios.get(QuizAPI_URL);
       setData(response.data.results);
-      console.log(response.data.results);
     } catch (error) {
       if (
         error.response &&
@@ -35,6 +36,22 @@ function QuizApi() {
   useEffect(() => {
     QuizData();
   }, []);
+
+  useEffect(() => {
+    if (data.length > 0) {
+      const sortedOptions = []
+        .concat(
+          [data[currentQuestion].correct_answer],
+          data[currentQuestion].incorrect_answers
+        )
+        .sort(() => Math.random() - 0.5);
+      setOptions(sortedOptions);
+    }
+  }, [data, currentQuestion]);
+
+  const handleOptionClick = (option) => {
+    setClickedOption(option);
+  };
 
   const changeQuestion = () => {
     updateScore();
@@ -71,49 +88,14 @@ function QuizApi() {
           />
         ) : (
           <>
-            <div className="question-container">
-              {data.length > 0 && (
-                <div>
-                  <span id="question-number">{`Question ${
-                    currentQuestion + 1
-                  }:`}</span>
-                  <p>{data[currentQuestion].question}</p>
-                  <div className="option-containers">
-                    {[]
-                      .concat(
-                        [data[currentQuestion].correct_answer],
-                        data[currentQuestion].incorrect_answers
-                      )
-                      .sort(() => Math.random() - 0.5)
-                      .map((option, i) => (
-                        <button
-                          className={`option-btn ${
-                            clickedOption === option
-                              ? clickedOption ===
-                                data[currentQuestion].correct_answer
-                                ? "checked"
-                                : "wrong"
-                              : ""
-                          }`}
-                          key={i}
-                          onClick={() => setClickedOption(option)}
-                        >
-                          {option}
-                        </button>
-                      ))}
-                  </div>
-
-                  {currentQuestion < data.length && (
-                    <input
-                      type="button"
-                      value="Next"
-                      id="next-btn"
-                      onClick={changeQuestion}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
+            <Question
+              data={data}
+              currentQuestion={currentQuestion}
+              options={options}
+              clickedOption={clickedOption}
+              handleOptionClick={handleOptionClick}
+              changeQuestion={changeQuestion}
+            />
           </>
         )}
       </div>
